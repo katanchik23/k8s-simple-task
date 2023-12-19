@@ -49,8 +49,8 @@ spec:
     environment {
         // Поміняйте APP_NAME на ваше імʼя та прізвище.
         // Поміняйте DOCKER_IMAGE_NAME по формату ваше імʼя аккаунту в Docker та імʼя образу
-        APP_NAME = 'your_app_name'
-        DOCKER_IMAGE_NAME = 'your_docker_hub_account/your_image_name'
+        APP_NAME = 'Maria_Povoroznik'
+        DOCKER_IMAGE_NAME = 'katanchik/lab'
     }
 
     stages {
@@ -59,7 +59,10 @@ spec:
                 container(name: 'jnlp', shell: '/bin/bash') {
                     echo 'Pulling new changes'
                     // Крок клонування репозиторію
-                    // TODO: ваш код з лабораторної № 4
+                    git(
+                        url: 'https://github.com/katanchik23/k8s-simple-task',
+                        branch: "main",
+                    )
                 }
             }
         }
@@ -77,10 +80,11 @@ spec:
                 container(name: 'golang', shell: '/bin/bash') {
                     echo 'Testing the application'
                     // Виконання юніт-тестів.
-                    // TODO: ваш код з лабораторної № 4
+                    sh 'go test'
                 }
             }
         }
+
         stage('Build image') {
             // Не потрібно змінювати. Цей код працюватиме, якщо у вас правильний Dockerfile.
             environment {
@@ -98,11 +102,8 @@ spec:
             steps {
                 container(name: 'kubectl', shell: '/bin/bash') {
                     echo 'Deploying to Kubernetes'
-                    // TODO: Потрібно зробити дві речі
-                    // TODO: По-перше: якимось чином за допомогою bash підставте значення змінних DOCKER_IMAGE_NAME і BUILD_NUMBER у свій Deployment.
-                    // TODO: Підказка: bitnami/kubectl має доступну утиліту 'sed'
-                    // TODO: Але ви можете використовувати будь-яке інше рішення (Kustomize, тощо)
-                    // TODO: По-друге: використовуйте kubectl apply з контейнера kubectl щоб застосувати маніфести з директорії k8s
+                    sh "sed -Ei 's#image: lab#image: ${DOCKER_IMAGE_NAME}:${BUILD_NUMBER}#' ./k8s/deployment.yaml && kubectl apply -f k8s/"
+                    archiveArtifacts artifacts: "k8s/deployment.yaml", onlyIfSuccessful: true
                 }
             }
         }
@@ -129,10 +130,8 @@ spec:
                 }
             }
             steps {
-                echo 'Testing the deployemnt with curl'
-                // TODO: За допомогою контейнера ubuntu встановіть `curl`
-                // TODO: Використайте curl, щоб зробити запит на http://labfive:80
-                // TODO: Можливо, вам доведеться почекати приблизно 10 секунд, поки все буде розгорнуто вперше
+                    echo 'Testing the deployment with curl'
+                    sh 'curl http://labfive:80'      
             }
         }
     }
